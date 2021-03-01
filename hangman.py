@@ -118,14 +118,21 @@ def correct_letters(letter):
 def hide_word(word):
     w = 0
     s = 0
-    letters = len(word)
-    spaces_letters = '_'
-    for l in word:
-        theword.update({w: l})
-        w += 1
-    while s < letters:
-        empty_spaces.update({s: spaces_letters})
-        s += 1
+    try:
+        letters = len(word)
+        spaces_letters = '_'
+        for l in word:
+            if l.isdigit():
+                raise ValueError
+            else:
+                theword.update({w: l})
+                w += 1
+        while s < letters:
+            empty_spaces.update({s: spaces_letters})
+            s += 1
+    except ValueError:
+        print('The word must be only letters.')
+        main()
 
 def unhide_word():
     for i in empty_spaces.values():
@@ -159,41 +166,47 @@ def player_mode(player):
         print('---------\n\n')
         unhide_word()
         guess_letters = input('\n\nThink of a letter: ')
-        letter = upperlowerstring(guess_letters)
-        if Player == 1:
-            if letter in theword.values():
-                print('Correct! Letter: ' + letter)
-                correct_letters(letter)
-                if empty_spaces == theword:
-                    print(player)    
-                    print(win)
-                    print('the game.\n')
-                    print('Congratulations! The word is:')
-                    threading.Thread(target=unhide_word).start()
-                    play_again()
+        try: 
+            if guess_letters.isdigit() or guess_letters == '':
+                raise ValueError
             else:
-                if tries > 0:
-                    wrong_words.append(letter)
-                wrong = len(wrong_words)
-                if wrong > 0:
-                    remaining = fails - 1
-                    remainings.update({'Remaining': remaining})
-                    fails -= 1
-                    for i in range(len(wrong_words)):
-                        if i == 5:
-                            print(player)
-                            print(lose)
-                            print('the game.')
-                            print('\nThe correct word was: ')
-                            for w in theword:
-                                # Correct word if you fail all letters
-                                print(theword[w], end = '')
-                            print('\nTry again!\n')
-                            threading.Thread(target=wrong_letters).start()
+                letter = upperlowerstring(guess_letters)
+                if Player == 1:
+                    if letter in theword.values():
+                        print('Correct! Letter: ' + letter)
+                        correct_letters(letter)
+                        if empty_spaces == theword:
+                            print(player)    
+                            print(win)
+                            print('the game.\n')
+                            print('Congratulations! The word is:')
+                            threading.Thread(target=unhide_word).start()
                             play_again()
-        else:
-            pass
-        wrong_letters()
+                    else:
+                        if tries > 0:
+                            wrong_words.append(letter)
+                        wrong = len(wrong_words)
+                        if wrong > 0:
+                            remaining = fails - 1
+                            remainings.update({'Remaining': remaining})
+                            fails -= 1
+                            for i in range(len(wrong_words)):
+                                if i == 5:
+                                    print(player)
+                                    print(lose)
+                                    print('the game.')
+                                    print('\nThe correct word was: ')
+                                    for w in theword:
+                                        # Correct word if you fail all letters
+                                        print(theword[w], end = '')
+                                    print('\nTry again!\n')
+                                    threading.Thread(target=wrong_letters).start()
+                                    play_again()
+                else:
+                    print('Just for fun!')
+                wrong_letters()
+        except ValueError:
+            print('Make sure you\'re typing only letters.')
 
 def main():
 
@@ -207,45 +220,58 @@ def main():
         print(f'{n}: {d}')
 
     option = input('\nSelect an option: ')
-    
-    if option.isdigit():    
 
+    try:
         if int(option) == 1:
             # Random word from a file
             word = ''
             # Single player mode
             player = input('Single Player name: ')
-
             # Loading the words list file
-            wordsfile = open('words.json')
-            data = json.load(wordsfile)
-
-            for i in data:
-                word = random.choice(data[i])
-
-            hide_word(word)
-
-            player_mode(player)  
-
+            try:
+                # If the words list file has another name
+                wordsfile = open('words.json')
+                data = json.load(wordsfile)
+                for i in data:
+                    word = random.choice(data[i])
+                hide_word(word)
+                player_mode(player) 
+            except FileNotFoundError:
+                print('The file does not exist.')
+ 
         elif int(option) == 2:
             # Two player mode
             player1 = input('Name Player 1: ')
             player2 = input('Name Player 2: ')
 
             # Secrect word
-            word = getpass.getpass(player1 + ' Write a simple word please: ')
-        
-            hide_word(word)
+            try:
+                while True:
+                    word = getpass.getpass(player1 + ' Write a simple word please: ')
+                    try: 
+                        if word.isdigit() or word == '':
+                            raise ValueError
+                        else:
+                            hide_word(word)
+                            player_mode(player2)
+                    except ValueError:
+                        print('Wrong value. Must be an string.')
+            except EOFError:
+                print('Invalid input.')
+            except KeyboardInterrupt:
+                print('The game was interrupted.')
 
-            player_mode(player2)
         elif int(option) == 3:
-            print('You quit the game.')
+            print('You quit the game. Bye Bye!')
             quit()
+
         else:
-            print('This option is not on the list.')
+            print('Wrong option, select an option from the list.')
             main()
-    else:
-        print('Select an option of the list.')
+
+    except ValueError:
+            print('Only accepts options from the list.')
+            main()
     
 if __name__ == '__main__':
     main()
